@@ -12,3 +12,25 @@ def display_expences_list
     puts row.join(' | ')
   end
 end
+
+def display_help
+  puts <<~HELP
+    An expense recording system
+
+    Commands:
+
+    add AMOUNT MEMO [DATE] - records a new expense
+    clear - delete all expenses
+    list - lists all expenses
+    delete NUMBER - removes expenses with id NUMBER
+    search QUERY - lists expenses with a matching memo field
+  HELP
+end
+
+command = ARGV.first
+
+case command
+when 'list' then display_expences_list
+else
+  display_help
+end
