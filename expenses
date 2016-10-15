@@ -1,49 +1,62 @@
 #! /usr/bin/env ruby
 
 require 'pg'
+class ExpenseData
+  def initialize
+    @connection = PG.connect(dbname: "expenses")
+  end
 
-CONNECTION = PG.connect(dbname: "expenses")
+  def display_expences_list
+    sql_query = 'SELECT * FROM expenses ORDER BY created_on ASC'
+    result = @connection.exec sql_query
 
-def display_expences_list
-  sql_query = 'SELECT * FROM expenses'
-  result = CONNECTION.exec sql_query
+    result.each do |tupple|
+      row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
+      puts row.join(' | ')
+    end
+  end
 
-  result.each do |tupple|
-    row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
-    puts row.join(' | ')
+  def add_expense(amount, memo)
+    date = Date.today
+    sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES ($1, $2, $3);"
+    @connection.exec_params(sql_query, [amount, memo, date])
   end
 end
 
-def add_expense(amount, memo)
-  date = Date.today
-  sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES ($1, $2, $3);"
-  CONNECTION.exec_params(sql_query, [amount, memo, date])
+class CLI
+  def initialize
+    @application = ExpenseData.new
+  end
+
+  def run(arguments)
+    command = arguments.shift
+
+    case command
+    when 'list'
+      @application.display_expences_list
+    when 'add' 
+      amount = arguments[0]
+      memo = arguments[1]
+      abort 'You must provide an amount and memo.' unless amount && memo
+      @application.add_expense(amount, memo)
+    else
+      display_help
+    end
+  end
+
+  def display_help
+    puts <<~HELP
+      An expense recording system
+
+      Commands:
+
+      add AMOUNT MEMO [DATE] - records a new expense
+      clear - delete all expenses
+      list - lists all expenses
+      delete NUMBER - removes expenses with id NUMBER
+      search QUERY - lists expenses with a matching memo field
+    HELP
+  end
 end
 
-def display_help
-  puts <<~HELP
-    An expense recording system
-
-    Commands:
-
-    add AMOUNT MEMO [DATE] - records a new expense
-    clear - delete all expenses
-    list - lists all expenses
-    delete NUMBER - removes expenses with id NUMBER
-    search QUERY - lists expenses with a matching memo field
-  HELP
-end
-
-command = ARGV.first
-
-case command
-when 'list'
-  display_expences_list
-when 'add' 
-  amount = ARGV[1]
-  memo = ARGV[2]
-  abort 'You must provide an amount and memo.' unless amount && memo
-  add_expense(amount, memo)
-else
-  display_help
-end
+CLI.new.run(ARGV)
