@@ -1,6 +1,8 @@
 #! /usr/bin/env ruby
 
 require 'pg'
+require 'io/console'
+
 class ExpenseData
   def initialize
     @connection = PG.connect(dbname: "expenses")
@@ -9,7 +11,7 @@ class ExpenseData
   def display_expences_list
     sql_query = 'SELECT * FROM expenses ORDER BY created_on ASC'
     result = @connection.exec sql_query
-    display_expences(result)
+    result.any? ? display_expences(result) : puts('There are no expenses.')
   end
 
   def add_expense(amount, memo)
@@ -21,16 +23,39 @@ class ExpenseData
   def search(query)
     sql_query = "SELECT * FROM expenses WHERE memo ~ $1"
     result = @connection.exec_params(sql_query, [query])
-    display_expences(result)
+    result.any? ? display_expences(result) : puts('No match found.')
+  end
+
+  def has_id?(id)
+    sql_query = "SELECT * FROM expenses WHERE id = $1"
+    result = @connection.exec_params(sql_query, [id]) 
+    result.any?
+  end
+
+  def delete_expense(id)
+    sql_query = "DELETE FROM expenses WHERE id = $1"
+    result = @connection.exec_params(sql_query, [id]) 
+  end
+
+  def delete_all_expenses
+    @connection.exec('DELETE FROM expenses')
+    puts 'All expenses have been deleted.'
   end
 
   private
 
-  def display_expences(result)
-    result.each do |tupple|
+  def display_expences(expenses)
+    count = expenses.count
+    sum = expenses.field_values('amount').map(&:to_f).inject(:+)
+    puts "There are #{count} expenses."
+
+    expenses.each do |tupple|
       row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
       puts row.join(' | ')
     end
+
+    puts '-' * 50
+    puts " Total #{sum.to_s.rjust(25)}"
   end
 end
 
@@ -52,6 +77,14 @@ class CLI
       @application.add_expense(amount, memo)
     when 'search'
       @application.search(arguments)
+    when 'delete'
+      id = arguments.first
+      abort "There is no expense with the id '#{id}'." unless @application.has_id?(id)
+      @application.delete_expense(id)
+    when 'clear'
+      puts 'This will remove all expenses. Are you sure? (y/n)'
+      response = $stdin.getch
+      @application.delete_all_expenses if response == 'y'
     else
       display_help
     end
