@@ -2,10 +2,11 @@
 
 require 'pg'
 
+CONNECTION = PG.connect(dbname: "expenses")
+
 def display_expences_list
-  db = PG.connect(dbname: "expenses")
   sql_query = 'SELECT * FROM expenses'
-  result = db.exec sql_query
+  result = CONNECTION.exec sql_query
 
   result.each do |tupple|
     row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
