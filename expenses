@@ -9,17 +9,28 @@ class ExpenseData
   def display_expences_list
     sql_query = 'SELECT * FROM expenses ORDER BY created_on ASC'
     result = @connection.exec sql_query
-
-    result.each do |tupple|
-      row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
-      puts row.join(' | ')
-    end
+    display_expences(result)
   end
 
   def add_expense(amount, memo)
     date = Date.today
     sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES ($1, $2, $3);"
     @connection.exec_params(sql_query, [amount, memo, date])
+  end
+
+  def search(query)
+    sql_query = "SELECT * FROM expenses WHERE memo ~ $1"
+    result = @connection.exec_params(sql_query, [query])
+    display_expences(result)
+  end
+
+  private
+
+  def display_expences(result)
+    result.each do |tupple|
+      row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
+      puts row.join(' | ')
+    end
   end
 end
 
@@ -39,6 +50,8 @@ class CLI
       memo = arguments[1]
       abort 'You must provide an amount and memo.' unless amount && memo
       @application.add_expense(amount, memo)
+    when 'search'
+      @application.search(arguments)
     else
       display_help
     end
