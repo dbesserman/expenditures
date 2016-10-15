@@ -16,8 +16,8 @@ end
 
 def add_expense(amount, memo)
   date = Date.today
-  sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES (#{amount}, '#{memo}', '#{date}');"
-  CONNECTION.exec sql_query
+  sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES ($1, $2, $3);"
+  CONNECTION.exec_params(sql_query, [amount, memo, date])
 end
 
 def display_help
