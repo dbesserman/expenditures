@@ -5,3 +5,8 @@ require 'pg'
 db = PG.connect(dbname: "expenses")
 sql_query = 'SELECT * FROM expenses'
 result = db.exec sql_query
+
+result.each do |tupple|
+  row = [tupple['id'].rjust(4), tupple['created_on'].rjust(10), tupple['amount'].rjust(12), tupple['memo']]
+  puts row.join(' | ')
+end
