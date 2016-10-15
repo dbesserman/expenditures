@@ -14,6 +14,12 @@ def display_expences_list
   end
 end
 
+def add_expense(amount, memo)
+  date = Date.today
+  sql_query = "INSERT INTO expenses (amount, memo, created_on) VALUES (#{amount}, '#{memo}', '#{date}');"
+  CONNECTION.exec sql_query
+end
+
 def display_help
   puts <<~HELP
     An expense recording system
@@ -31,7 +37,13 @@ end
 command = ARGV.first
 
 case command
-when 'list' then display_expences_list
+when 'list'
+  display_expences_list
+when 'add' 
+  amount = ARGV[1]
+  memo = ARGV[2]
+  abort 'You must provide an amount and memo.' unless amount && memo
+  add_expense(amount, memo)
 else
   display_help
 end
