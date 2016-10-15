@@ -2,4 +2,6 @@
 
 require 'pg'
 
-puts 'Hello World'
+db = PG.connect(dbname: "expenses")
+sql_query = 'SELECT * FROM expenses'
+result = db.exec sql_query
